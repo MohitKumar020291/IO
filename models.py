@@ -15,7 +15,7 @@ class TensorFiles(BaseModel):
     @classmethod
     def check_pt(cls, file_path):
         _, file_extension = os.path.splitext(file_path)
-        if file_extension not in [".pt", ".pkl"]:
+        if file_extension not in [".pt"]:
             raise ValueError("pt_file_path should have extension .pt")
         return file_path
 
@@ -28,4 +28,4 @@ class Tokens(BaseModel):
 
 class Embeddings(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    embeddings: List[torch.Tensor]
+    embeddings: torch.Tensor
