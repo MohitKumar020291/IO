@@ -9,9 +9,16 @@ class Db(ABC):
         pass
 
     @abstractmethod
+    def insertDocuments(self, documents):
+        pass
+
+    @abstractmethod
     def insertDocument(self, documents):
         pass
 
+    @abstractmethod
+    def deleteIndex(self, index_name: str):
+        pass
 
     def idGenerator(self) -> str:
         import uuid

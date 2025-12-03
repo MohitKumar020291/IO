@@ -8,10 +8,11 @@ from DB.db import Db
 
 
 # https://github.com/elastic/start-local
+# Problem with this class is this ES object is assosciated with a single self.index_name
 class ES(Db):
     def __init__(
             self,
-            index_name: str, 
+            index_name: str,
             embedding_dim: int
         ):
         load_dotenv()
@@ -60,3 +61,7 @@ class ES(Db):
         _id = super().idGenerator()
         self.es.index(index=self.index_name, id=_id, document=document)
         self.es.indices.refresh(index=self.index_name)
+
+    def deleteIndex(self) -> True:
+        self.es.indices.delete(index=self.index_name, ignore=[400, 404])
+        return True

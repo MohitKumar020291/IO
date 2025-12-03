@@ -1,7 +1,7 @@
 import torch
+import numpy as np
 
 import os
-from typing import List
 from pydantic import BaseModel, field_validator, ConfigDict
 
 
@@ -28,4 +28,4 @@ class Tokens(BaseModel):
 
 class Embeddings(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    embeddings: torch.Tensor
+    embeddings: np.ndarray
