@@ -1,0 +1,41 @@
+base_prompt: "What are the causes and effects of deforestation?"
+
+# Length Gradient: 10 → 30 (Monotonic increase in tokens and complexity)
+# All prompts maintain the semantic core: causes & consequences of deforestation
+
+sp1: "List deforestation causes and effects."
+sp2: "Explain deforestation's causes and consequences."
+sp3: "Describe why deforestation happens and what results from it."
+sp4: "Outline the key factors driving deforestation and their impacts."
+sp5: "What leads to deforestation, and what are its main outcomes?"
+sp6: "Analyze the drivers behind deforestation and the effects that follow."
+sp7: "Examine the reasons for forest clearance and the resulting changes."
+sp8: "Discuss what causes deforestation and how it affects the environment."
+sp9: "Identify the primary causes of deforestation and their consequences."
+sp10: "Can you explain both the origins and the repercussions of deforestation?"
+
+# Mid-length prompts with more structure
+sp11: "Provide a clear explanation of deforestation's causes, followed by its significant effects on ecosystems."
+sp12: "I need a breakdown: what are the main reasons forests are cleared, and what happens afterwards?"
+sp13: "Please detail the anthropogenic factors causing deforestation and the environmental consequences."
+sp14: "Deforestation—why does it occur, and what are its most serious impacts globally?"
+sp15: "Explain the economic and social causes of deforestation, along with ecological consequences."
+sp16: "Describe the chain of events: from the initial drivers of deforestation to the final outcomes."
+sp17: "What human activities cause deforestation, and what are the negative results?"
+sp18: "Analyze both direct and indirect causes of deforestation, and their combined effects."
+sp19: "From agriculture to logging: explain how these activities cause deforestation and what changes they bring."
+sp20: "Provide a cause-and-effect analysis of global deforestation patterns."
+
+# Longer, more detailed prompts
+sp21: "In a structured format, first list and explain the major causes of deforestation worldwide, then systematically detail the range of consequences for climate, biodiversity, and human societies."
+sp22: "Considering deforestation as a critical environmental issue, please elaborate on its multifactorial causes—including but not limited to agricultural expansion, logging, and infrastructure development—and subsequently explore its diverse effects, such as loss of habitat, carbon emissions, and soil degradation."
+sp23: "For a comprehensive understanding, your response should address two fundamental aspects: firstly, the complex web of factors that drive deforestation across different regions, and secondly, the cascade of ecological and socio-economic impacts that emerge from widespread forest loss."
+sp24: "Deforestation represents a significant transformation of land cover. Explain the primary motivations behind this transformation—economic, demographic, political—and then articulate how this transformation alters ecosystem functions, climate systems, and community livelihoods."
+sp25: "I request a thorough examination that covers, in two parts: (1) the proximate and underlying causes of deforestation, and (2) the immediate and long-term consequences at local, regional, and global scales."
+
+# Very detailed, academic-style prompts
+sp26: "Drawing upon environmental science principles, construct an integrated analysis that identifies and explains the key drivers of deforestation—categorized as direct drivers like agriculture, mining, urbanization, and indirect drivers like policy, trade, and population growth—and then assesses the resultant impacts across domains: atmospheric (climate change), biological (biodiversity loss), hydrological (water cycle disruption), and sociological (displacement, economic shifts)."
+sp27: "From a systems thinking perspective, deforestation is both a cause and consequence of global change. Please produce a detailed response that maps the causal network: beginning with the human activities and decisions that initiate forest clearance, tracing through the biophysical and ecological changes that occur, and culminating in the feedback effects on human systems and planetary health."
+sp28: "As preparation for a policy brief, provide a comprehensive overview that addresses two critical questions: What are the principal factors—economic, institutional, technological, and cultural—that lead to deforestation in tropical, temperate, and boreal regions? And what are the demonstrable effects of this deforestation on carbon storage capacity, species survival rates, soil fertility, water quality, and the resilience of communities dependent on forest resources?"
+sp29: "Imagine you are drafting a chapter for a textbook on global environmental issues. The chapter section on deforestation must first elucidate the complex etiology of the phenomenon, examining interplay between market forces, governance structures, land tenure systems, and subsistence needs. It must then delineate the multifarious consequences, incorporating data on emissions, extinction risks, alterations to albedo and evapotranspiration, impacts on indigenous knowledge systems, and implications for achieving sustainable development goals."
+sp30: "In the context of planetary boundaries and the Anthropocene, deforestation stands as a major driver of Earth system transformation. Compose a scholarly, nuanced exposition that fulfills two objectives: First, to dissect and explain the hierarchical layers of causation—from immediate agents like farmers and corporations to intermediate factors like road building and commodity prices, to root causes like consumption patterns and global economic inequality. Second, to synthesize and present the extensive portfolio of consequences, weaving together findings from ecology, climatology, hydrology, and social science to cover impacts on species populations, biogeochemical cycles, regional climate patterns, ecosystem service provision, human health epidemiology, and geopolitical stability in forested regions."

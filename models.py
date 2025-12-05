@@ -26,6 +26,10 @@ class Tokens(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     tokens: torch.Tensor
 
+    def __len__(self):
+        return self.tokens.size(0)
+
+
 class Embeddings(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     embeddings: np.ndarray

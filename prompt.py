@@ -1,12 +1,16 @@
 import torch
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer
+import matplotlib.pyplot as plt
 
-from typing import Union
+from typing import Union, Tuple
+import time
+import threading
+import os
 
-from models import TensorFiles, Prompt, Tokens, Embeddings
+from models import Prompt, Tokens, Embeddings
 from DB.es import ES
+from helper import read_yaml
 
 
 # take prompt
@@ -20,7 +24,8 @@ class Model:
             self, 
             model: nn.Module,
             sentence_embed_model_name: str = None,
-            vd_type: str = "elastic-search"
+            vd_type: str = "elastic-search",
+            device: str = "cpu"
         ):
         """
         :param model: LLM for inferencing, do not know how to use it now.
@@ -36,7 +41,7 @@ class Model:
         self.model: Model = model
 
         try:
-            self.sentence_embed_model = SentenceTransformer(sentence_embed_model_name)
+            self.sentence_embed_model = SentenceTransformer(sentence_embed_model_name, device="cpu")
             self.tokenizer = self.sentence_embed_model.tokenizer
         except Exception as e:
             raise e
@@ -47,7 +52,7 @@ class Model:
         self.index_name = "prompt_embeddings"
         self.setUpVD()
 
-    def cacheEmbeddings(self, input: Union[Prompt, Tokens, Embeddings]) -> None:
+    def cacheEmbeddings(self, input: Union[Prompt, Tokens, Embeddings]) -> str:
         """
         Caches the embeddings of a prompt or tokens or embeddings itself.
 
@@ -57,6 +62,8 @@ class Model:
         :type Tokens: List[int]
         :param Embeddings: A list of embeddings
         :type Embeddings: List[torch.Tensor]
+        :return: returns id of the document just added
+        :rtype: str
         """
         if isinstance(input, Prompt):
             embeddings = self.getEmbeddings(input=input)
@@ -70,8 +77,8 @@ class Model:
         # Store in a vector database
         embeddings = embeddings.embeddings.tolist()
         mapped_embeddings = {"prompt": prompt, "embeddings": embeddings}
-        self.vd.insertDocument(mapped_embeddings)
-        return
+        id = self.vd.insertDocument(mapped_embeddings)
+        return id
 
     def tokensToPrompt(self, tokens: Tokens) -> Prompt: 
         """
@@ -123,7 +130,6 @@ class Model:
         """
         if isinstance(input, Tokens):
             input: Prompt = self.tokensToPrompt(input)
-        print(input.prompt)
         embeddings: Embeddings = Embeddings(embeddings=self.sentence_embed_model.encode(input.prompt))
         return embeddings
 
