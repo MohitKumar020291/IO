@@ -25,12 +25,14 @@ class ES(Db):
 
         self.setUp()
 
-    def setUp(self) -> None:
+    def setUp(self, mapping: dict = None) -> None:
         if self.environment == "development":
             self.es_url = "http://localhost:9200"
             self.es = Elasticsearch(self.es_url, basic_auth=(self.username, self.password))
 
-            mapping = {
+            # This should be provided by the user for robustness
+            self.mapping = mapping or \
+            {
                 "properties": {
                     "prompt": {"type": "text"},
                     "embeddings": {
@@ -41,7 +43,7 @@ class ES(Db):
             }
 
             if not self.es.indices.exists(index=self.index_name):
-                self.es.indices.create(index=self.index_name, body={"mappings": mapping})
+                self.es.indices.create(index=self.index_name, body={"mappings": self.mapping})
 
         elif self.environment == "production":
             return
@@ -57,11 +59,21 @@ class ES(Db):
         else:
             raise TypeError(f"documents should be of type list[dict] or dict, got {type(documents)}")
         
-    def insertDocument(self, document: Dict):
-        _id = super().idGenerator()
-        self.es.index(index=self.index_name, id=_id, document=document)
+    def insertDocument(self, document: Dict) -> str:
+        id = super().idGenerator()
+        self.es.index(index=self.index_name, id=id, document=document)
         self.es.indices.refresh(index=self.index_name)
+        return id
+    
+    def deleteDocument(self, id: str) -> bool:
+        return self.es.delete(index=self.index_name, id=id)
 
-    def deleteIndex(self) -> True:
-        self.es.indices.delete(index=self.index_name, ignore=[400, 404])
-        return True
+    def deleteIndex(self) -> bool:
+        return self.es.indices.delete(index=self.index_name, ignore=[400, 404])
+
+    def search(self, search_body: dict = None, search_query: dict = None, size: int = 1):
+        if not isinstance(search_body, dict) and not isinstance(search_query, dict):
+            raise ValueError("Either provide search_body or search_query.")
+        # validate format
+        # validate sources (No need elasticsearch would take care)
+        return self.es.search(index=self.index_name, body=search_body, size=size)
