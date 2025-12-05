@@ -1,3 +1,2 @@
 <h2 align="center">Inference optimization</h2>
-<center><img src="./Performance/public/tokenSizeVsRetrievalAndGenerationTime.png" style="border-radius: 15px"></center>
-
+<p align="center" style="border-radius: 15px"><img src="./Performance/public/tokenSizeVsRetrievalAndGenerationTime.png" ></p>
