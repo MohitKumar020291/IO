@@ -1,16 +1,11 @@
 import torch
 import torch.nn as nn
 from sentence_transformers import SentenceTransformer
-import matplotlib.pyplot as plt
 
-from typing import Union, Tuple
-import time
-import threading
-import os
+from typing import Union
 
 from models import Prompt, Tokens, Embeddings
-from DB.es import ES
-from helper import read_yaml
+from ModelType.gguf import GGUF
 
 
 # take prompt
@@ -22,35 +17,27 @@ if prompting:
 class Model:
     def __init__(
             self, 
-            model: nn.Module,
+            model: Union[GGUF], #add other types if needed
             sentence_embed_model_name: str = None,
-            vd_type: str = "elastic-search",
             device: str = "cpu"
         ):
         """
         :param model: LLM for inferencing, do not know how to use it now.
         :type model: torch.nn.Module
-        :param tokenizer: 
-        :type tokenizer: Union[str, AutoTokenizer]
         :param embedding_filename: Useful for storing embeddings when we are not using pretrained models for generating new ones
         :type embedding_filename: str
         """
-        if not isinstance(model, nn.Module):
-            raise Exception(f"model should be of instance nn.Module")
 
-        self.model: Model = model
+        self.model = model
 
         try:
-            self.sentence_embed_model = SentenceTransformer(sentence_embed_model_name, device="cpu")
-            self.tokenizer = self.sentence_embed_model.tokenizer
+            self.sentence_embed_model = SentenceTransformer(sentence_embed_model_name, device=device)
         except Exception as e:
             raise e
 
         # Database settings
         self.embedding_dim = self.sentence_embed_model.get_sentence_embedding_dimension()
-        self.vd_type = vd_type
         self.index_name = "prompt_embeddings"
-        self.setUpVD()
 
     def cacheEmbeddings(self, input: Union[Prompt, Tokens, Embeddings]) -> str:
         """
@@ -85,7 +72,7 @@ class Model:
         :param tokens: these are token ids
         :type tokens: List[int]
         """
-        prompt: str = self.tokenizer.decode(tokens.tokens)
+        prompt: str = self.model.model.detokenize(tokens.tokens)
         return Prompt(prompt=prompt)
 
     def embedToTokens(self, embeddings: Embeddings) -> Tokens:
@@ -120,7 +107,7 @@ class Model:
         :type prompt: Prompt
         """
         prompt = input.prompt
-        tokens: torch.Tensor = self.tokenizer(prompt, return_tensors='pt')["input_ids"]
+        tokens: torch.Tensor = torch.Tensor(self.model.model.tokenize(prompt))
         return Tokens(tokens=tokens)
 
     def getEmbeddings(self, input: Union[Prompt, Tokens]) -> Embeddings:
@@ -133,6 +120,5 @@ class Model:
         embeddings: Embeddings = Embeddings(embeddings=self.sentence_embed_model.encode(input.prompt))
         return embeddings
 
-    def setUpVD(self):
-        if self.vd_type == "elastic-search":
-            self.vd = ES(index_name=self.index_name, embedding_dim=self.embedding_dim)
+    def infer(self, input: Prompt | Tokens):
+        return self.model.infer(input=input)
