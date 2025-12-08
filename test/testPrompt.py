@@ -2,7 +2,7 @@ import unittest
 
 import torch.nn as nn
 
-from prompt import Model
+from chat_model import Model
 from models import Prompt
 
 class Test(unittest.TestCase):

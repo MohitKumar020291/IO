@@ -1,6 +1,8 @@
 #!/bin/sh
 
+source .env
 
-if [[ "$1" == "ptm" ]]; then
-    source ./Performance/run.sh ${@:2}
+if [ "$environment" == "development" ]; 
+then
+    uvicorn app:app --host localhost --port 8000 --reload
 fi

@@ -13,7 +13,8 @@ class ES(Db):
     def __init__(
             self,
             index_name: str,
-            embedding_dim: int
+            embedding_dim: int,
+            mapping: dict = None
         ):
         load_dotenv()
         self.environment = os.getenv("environment")
@@ -23,7 +24,7 @@ class ES(Db):
         self.username = os.getenv("es_username")
         self.password = os.getenv("es_password")
 
-        self.setUp()
+        self.setUp(mapping=mapping)
 
     def setUp(self, mapping: dict = None) -> None:
         if self.environment == "development":
@@ -67,6 +68,10 @@ class ES(Db):
     
     def deleteDocument(self, id: str) -> bool:
         return self.es.delete(index=self.index_name, id=id)
+
+    def deleteDocuments(self, ids: list[str]) -> bool:
+        for id in ids:
+            return self.es.delete(index=self.index_name, id=id)
 
     def deleteIndex(self) -> bool:
         return self.es.indices.delete(index=self.index_name, ignore=[400, 404])

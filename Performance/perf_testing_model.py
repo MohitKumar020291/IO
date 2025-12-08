@@ -1,15 +1,15 @@
 import os
-import threading
-from typing import Tuple
+from typing import Tuple, Union
 import time
 
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
 
-from prompt import Model
-from models import Prompt, Tokens
+from chat_model import Model
+from models import Prompt, Embeddings
 from helper import read_yaml
+from Performance.helper import sort_argsort, find_pop_idxs, do_pop_idxs
 
 
 model_for_testing = nn.Linear(in_features=10, out_features=5)
@@ -66,36 +66,20 @@ class perfTestingModel(Model):
                 retrieve_times.append(t1)
                 generate_times.append(t2)
 
-            ###############################################
+            #####################CLEANING##########################
             retrieve_times = np.array(retrieve_times)
             generate_times = np.array(generate_times)
             token_sizes = np.array(token_sizes)
             token_sizes_sort = np.argsort(token_sizes)
-            token_sizes = token_sizes[token_sizes_sort]
-            retrieve_times = retrieve_times[token_sizes_sort]
-            generate_times = generate_times[token_sizes_sort]
+
+            token_sizes, retrieve_times, generate_times =\
+                sort_argsort(retrieve_times, generate_times, token_sizes, sort_idxs=token_sizes_sort)
 
             token_diff_thresh = 5
-            pop_indexes = []
-            prev_preserved = 0
-            for idx, (i, j) in enumerate(zip(token_sizes[:-1], token_sizes[1:])):
-                if j - i <= token_diff_thresh and j - token_sizes[prev_preserved] <= token_diff_thresh:
-                    pop_indexes.append(idx+1)
-                else:
-                    prev_preserved = idx+1
+            pop_indexes = find_pop_idxs(token_sizes, threshold=token_diff_thresh)
 
-            print(pop_indexes)
-
-            k = 0
-            for pop_idx in pop_indexes:
-                retrieve_times = np.delete(retrieve_times, pop_idx - k)
-                generate_times = np.delete(generate_times, pop_idx - k)
-                token_sizes = np.delete(token_sizes, pop_idx - k)
-                k += 1
-
-            print(retrieve_times)
-            print(generate_times)
-            print(token_sizes)
+            retrieve_times, generate_times, token_sizes =\
+                do_pop_idxs(retrieve_times, generate_times, token_sizes, pop_idxs=pop_indexes)
             ###############################################
 
             # change to a helper function
@@ -112,6 +96,57 @@ class perfTestingModel(Model):
             filepath = os.path.join(public_dir, "tokenSizeVsRetrievalAndGenerationTime.png")
             plt.savefig(filepath)
 
+    def search_prompt_in_vd(
+            self,
+            input: Union[Prompt, Embeddings], 
+            return_time: bool=True, 
+            return_result: bool=False, 
+            match_on: str="prompt",
+            size: int = 1,
+        ) -> float:
+
+        start_time = time.time()
+        if match_on == "prompt":
+            search_body = {
+                "query": {
+                    "match": {"prompt": input.prompt}
+                },
+                "_source": {
+                    "includes": ["prompt", "embeddings"]
+                }
+            }
+        else:
+            search_body = {
+                "_source": {
+                    "includes": ["prompt", "embeddings"]
+                    },
+                "query": {
+                    "script_score": {
+                        "query": {"match_all": {}},
+                        "script": {
+                            "source": "cosineSimilarity(params.query_vector, 'embeddings') + 1.0",
+                            "params": {
+                                "query_vector": input.embeddings.tolist()
+                            }
+                        }
+                    }
+                }
+            }
+        result = self.vd.search(search_body=search_body)
+        end_time = time.time()
+        time_taken = end_time - start_time
+        if return_result:
+            if return_time:
+                return time_taken, result
+            else:
+                return result
+        return time_taken
+
+    def generate_prompt_embeddings(self, prompt: Prompt) -> float:
+        start_time = time.time()
+        _ = super(perfTestingModel, self).getEmbeddings(input=prompt)
+        end_time = time.time()
+        return end_time - start_time
 
     def promptVsRAndG(self, prompt: Prompt) -> Tuple[float]:
         """
@@ -120,50 +155,42 @@ class perfTestingModel(Model):
         :param prompt: A prompt
         :type prompt: Prompt
         """
-        # time-retrieval
-        def search_prompt_in_vd(prompt: Prompt) -> float:
-            start_time = time.time()
-            search_body = {
-                "query": {
-                    "match": {
-                        "prompt": prompt.prompt
-                    }
-                },
-                "_source": {
-                    "includes": ["prompt", "embeddings"]
-                }
-            }
-            _ = self.vd.search(search_body=search_body)
-            end_time = time.time()
-            return end_time - start_time
-
-        # time-generation
-        def generate_prompt_embeddings(prompt: Prompt) -> float:
-            start_time = time.time()
-            _ = super(perfTestingModel, self).getEmbeddings(input=prompt)
-            end_time = time.time()
-            return end_time - start_time
-        
-        # t1 = threading.Thread(target=search_prompt_in_vd, args=(prompt,))
-        # t2 = threading.Thread(target=generate_prompt_embeddings, args=(prompt,))
-
-        # t1.start()
-        # t2.start()
-
-        # time1 = t1.join()
-        # time2 = t2.join()
 
         # IDK why I need this warm up run, elastic search have some problem!
         for _ in range(3):
-            search_prompt_in_vd(prompt=prompt)
-            generate_prompt_embeddings(prompt=prompt)
+            self.search_prompt_in_vd(input=prompt)
+            self.generate_prompt_embeddings(prompt=prompt)
 
-        retrieve_time = search_prompt_in_vd(prompt=prompt)
-        generate_time = generate_prompt_embeddings(prompt=prompt)
+        retrieve_time = self.search_prompt_in_vd(prompt=prompt)
+        generate_time = self.generate_prompt_embeddings(prompt=prompt)
         return retrieve_time, generate_time
+
+    def SemanticSearch(self, match_on="prompt"):
+        """
+        some random prompts are also added to the vector database along with base prompt
+        :param match_on: if embeddings then we look embeddings similarity
+        """
+        prompts: dict = read_yaml(os.path.join(os.path.dirname(__file__), "TenRandomPrompt.yaml"))
+        ids = []
+        for prompt in list(prompts.values())[0]:
+            ids.append(super().cacheEmbeddings(input=Prompt(prompt=prompt)))
+        sub_prompts: dict = read_yaml(os.path.join(os.path.dirname(__file__), "cacheVsGen.yaml"))
+
+        results_text = []
+        for prompt_type, sub_prompt in sub_prompts.items():
+            if prompt_type == "base_prompt":
+                continue
+            input_ = Prompt(prompt=sub_prompt) if match_on=="prompt" \
+                else super().getEmbeddings(input=Prompt(prompt=sub_prompt))
+            result = self.search_prompt_in_vd(input=input_, return_time=False, return_result=True, match_on=match_on)
+            results_text.append((sub_prompt, result['hits']['hits'][0]['_source']['prompt']))
+        
+        self.vd.deleteDocuments(ids=ids)
+
+        return results_text
 
 
 # this file is actually a report
 if __name__ == "__main__":
     ptm = perfTestingModel()
-    ptm.generatetokenSizeVsRetrievalAndGenerationTime(save=True)
+    ptm.SemanticSearch(match_on="embeddings")
